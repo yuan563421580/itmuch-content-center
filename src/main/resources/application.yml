@@ -30,15 +30,26 @@ spring:
           # 允许调用实例的版本
           target-version: v1
 
-    # 整合 sentinel
-    sentinel:
-      transport:
-        # 指定 sentinel 控制台的地址
-        dashboard: localhost:8849
-        # dashboard: 39.102.66.189:8849
-      filter:
-        # 关闭对Spring MVC断点的保护 false:关闭 true:打开
-        enabled: true
+    # 整合 sentinel 测试的时候先临时注释掉
+#    sentinel:
+#      transport:
+#        # 指定 sentinel 控制台的地址
+#        dashboard: localhost:8849
+#        # dashboard: 39.102.66.189:8849
+#      filter:
+#        # 关闭对Spring MVC断点的保护 false:关闭 true:打开
+#        enabled: true
+
+    # 整合 Spring Cloud Stream RocketMQ
+    stream:
+      rocketmq:
+        binder:
+          name-server: 39.102.66.189:9876
+
+      bindings:
+        output:
+          # 用来指定 topic
+          destination: stream-test-topic
 
   # 用于处理多个FeignClient存在相同调用服务名的情况
   main:
@@ -62,6 +73,8 @@ logging:
     # 通过代码方式配置 Feign 的日志级别，需要在 yml 中进行如下配置，如果是 info 级别则不会打印任何日志
     # 可以通过下面这种方式配置多个具体的Client：如 UserCenterFeignClient1 、UserCenterFeignClient2 ...
     # com.itmuch.contentcenter.feignclient.UserCenterFeignClient: debug
+    # 低版本的时候，引入spring-cloud-starter-stream-rocketmq会一直打印日志，设定级别解决。本版本没有问题
+    # com.alibab.nacos: error
 
 feign:
   client:

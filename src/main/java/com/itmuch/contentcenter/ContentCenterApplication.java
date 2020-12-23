@@ -9,6 +9,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.cloud.stream.annotation.EnableBinding;
+import org.springframework.cloud.stream.messaging.Source;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
@@ -20,6 +22,7 @@ import tk.mybatis.spring.annotation.MapperScan;
  * @EnableDiscoveryClient 通过 Spring Cloud 原生注解 @EnableDiscoveryClient 开启服务注册发现功能 , Edgware版本开始可以不使用该注释
  * @EnableFeignClients 开启 Feign 的支撑
  * @EnableFeignClients(defaultConfiguration = GlobalFeignConfiguration.class) 开启 Feign 的支撑同时配置全局配置测试
+ * @EnableBinding(Source.class) 实现 Spring Cloud Stream 【发送】消息注解
  */
 //@ComponentScan(excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {MyConfig.class})})
 @ComponentScan(excludeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = ScanIgnore.class))
@@ -27,6 +30,7 @@ import tk.mybatis.spring.annotation.MapperScan;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients//(defaultConfiguration = GlobalFeignConfiguration.class)
+@EnableBinding(Source.class)
 public class ContentCenterApplication {
 
     public static void main(String[] args) {
@@ -48,6 +52,23 @@ public class ContentCenterApplication {
     /**
      * Nacos 控制台访问地址：http://39.102.66.189:8848/nacos
      * Sentinel 控制台访问地址：http://39.102.66.189:8849/#/login
+     * RocketMQ 控制台访问地址：http://39.102.66.189:17890/
+     */
+
+    /**
+     * 整合 MyBatis
+     *  · pom.xml 引入依赖 mysql-connector-java 、 mapper-spring-boot-starter
+     *  · Application 启动类上使用注解 @MapperScan("com.itmuch") 扫描 mybatis 里面的包的接口
+     *
+     * MyBatis通用Mapper （自动代码生成）
+     *  https://github.com/abel533/Mapper
+     *  ·  /resources/generator/generatorConfig.xml 和 /resources/generator/config.properties
+     *  ·  生成的实体类需要手动添加lombok注解： @Data 、 @Builder 、 @NoArgsConstructor 、 @AllArgsConstructor
+     *      因为现在自动生成器不支持生成这几个注解
+     *
+     * 简单说明一下用法比较
+     *  ·  updateByPrimaryKeySelective 会对字段进行判断再更新(如果为Null就忽略更新)，如果你只想更新某一字段，可以用这个方法。
+     *  ·  updateByPrimaryKey 对你注入的字段全部更新
      */
 
     /**
@@ -482,14 +503,16 @@ public class ContentCenterApplication {
      *   https://docs.spring.io/spring-boot/docs/2.1.6.RELEASE/reference/html/boot-features-messaging.html#boot-features-jms
      *
      * 编写生产者：
-     *  · pom.xml 中引入依赖： rocketmq-spring-boot-starter
-     *  · application.yml 中实现配置：rocketmq.name-server
-     *  · 业务实现逻辑：shareService.auditById() -> convertAndSend("topic(主题)", "消息体")
+     *  · 01).pom.xml 中引入依赖： rocketmq-spring-boot-starter
+     *  · 02).Application启动类上写注解：不需要
+     *  · 03).application.yml 中实现配置：rocketmq.name-server
+     *  · 04).业务实现逻辑：shareService.auditById() -> convertAndSend("topic(主题)", "消息体")
      * 编写消费者：
      *  在 user-center 模块实现 ; 方法实现类：AddBonusListener
-     *  · pom.xml 中引入依赖： rocketmq-spring-boot-starter
-     *  · application.yml 中实现配置：rocketmq.name-server
-     *  · 方法实现逻辑：实现 RocketMQListener 接口，泛型传入 消息体
+     *  · 01).pom.xml 中引入依赖： rocketmq-spring-boot-starter
+     *  · 02).Application启动类上写注解：不需要
+     *  · 03).application.yml 中实现配置：rocketmq.name-server
+     *  · 04).方法实现逻辑：实现 RocketMQListener 接口，泛型传入 消息体
      *      @Service
      *      @RocketMQMessageListener(consumerGroup = "consumer-group", topic = "add-bonus")
      *      public class XXX_Listener implements RocketMQListener<?> {
@@ -525,7 +548,40 @@ public class ContentCenterApplication {
      *          # jps
      *          # taskkill /PID [jps查出的线程ID] /F
      *
+     * ---
      *
+     * Spring Cloud Stream
+     *  查看Spring Cloud Stream.jpg
+     *  · 概念：一个用于构建消息驱动的微服务的框架。
+     *  · 支持：kafka 、 RabbitMQ 、 RocketMQ
+     * Spring Cloud Stream 编程模型：概念
+     *  查看Spring Cloud Stream 1.jpg
+     *  · Destination Binder (目标绑定器) : 与消息中间件通信的组件
+     *  · Destination Bindings (目标绑定) : Binding 是连接应用程序跟消息中间件的桥梁，用于消息的消费和生产，由 binder 创建。
+     *  · Message (消息)
+     *  · Input 表示微服务接收消息；Output 表示微服务发送消息。
+     * Spring Cloud Stream 编写生产者：
+     *  · 01).pom.xml 中引入依赖：spring-cloud-starter-stream-rocketmq
+     *  · 02).Application启动类上写注解：@EnableBinding(Source.class)
+     *  · 03).application.yml 中实现配置：spring.cloud.stream.rocketmq.binder 和 spring.cloud.stream.bindings
+     *  · 04).编写测试实现代码：TestStreamController#testStream()
+     *      source.output().send(Message<?> messag) 为发送消息的实现；
+     *      在 RocketMQ 控制台上 Message 中可以查看消费发送成功。
+     * Spring Cloud Stream 编写消费者：
+     *  在 user-center 模块实现 ;
+     *  · 01).pom.xml 中引入依赖：spring-cloud-starter-stream-rocketmq
+     *  · 02).Application启动类上写注解：@EnableBinding(Sink.class)
+     *  · 03).application.yml 中实现配置：spring.cloud.stream.rocketmq.binder 和 spring.cloud.stream.bindings
+     *  · 04).编写测试实现代码：TestStreamConsumer#receive()
+     *      @StreamListener(Sink.INPUT) : 通过注解 @StreamListener 实现多监听方法调度
+     * Spring Cloud Stream 接口自定义 编写生产者：
+     *  · 01).在上面 Spring Cloud Stream 编写生产者 基础上继续进行实现
+     *  · 02).定义接口 MySource
+     *
+     * Spring Cloud Stream 接口自定义 编写消费者：
+     * Spring Cloud Stream 本质：
+     *      当我们定义好Source/Sink接口后,在启动类使用EnableBinding指定了接口后,
+     *      就会使用IOC创建对应名字的代理类,所以配置文件中也必须同名。
      */
 
 }
