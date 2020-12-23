@@ -45,11 +45,12 @@ spring:
       rocketmq:
         binder:
           name-server: 39.102.66.189:9876
-
       bindings:
         output:
           # 用来指定 topic
           destination: stream-test-topic
+        my-output:
+          destination: stream-my-test-topic
 
   # 用于处理多个FeignClient存在相同调用服务名的情况
   main:

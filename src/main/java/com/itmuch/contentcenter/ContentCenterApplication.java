@@ -4,6 +4,7 @@ import com.alibaba.cloud.sentinel.annotation.SentinelRestTemplate;
 import com.itmuch.contentcenter.annotation.ScanIgnore;
 import com.itmuch.contentcenter.configuration.GlobalFeignConfiguration;
 import com.itmuch.contentcenter.configuration.MyConfig;
+import com.itmuch.contentcenter.rocketmq.MySource;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -26,11 +27,11 @@ import tk.mybatis.spring.annotation.MapperScan;
  */
 //@ComponentScan(excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {MyConfig.class})})
 @ComponentScan(excludeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = ScanIgnore.class))
-@MapperScan("com.itmuch")
+@MapperScan("com.itmuch.contentcenter.dao")
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients//(defaultConfiguration = GlobalFeignConfiguration.class)
-@EnableBinding(Source.class)
+@EnableBinding({Source.class, MySource.class})
 public class ContentCenterApplication {
 
     public static void main(String[] args) {
@@ -560,28 +561,58 @@ public class ContentCenterApplication {
      *  · Destination Bindings (目标绑定) : Binding 是连接应用程序跟消息中间件的桥梁，用于消息的消费和生产，由 binder 创建。
      *  · Message (消息)
      *  · Input 表示微服务接收消息；Output 表示微服务发送消息。
-     * Spring Cloud Stream 编写生产者：
+     *
+     * Spring Cloud Stream 编写【生产者】：
      *  · 01).pom.xml 中引入依赖：spring-cloud-starter-stream-rocketmq
      *  · 02).Application启动类上写注解：@EnableBinding(Source.class)
-     *  · 03).application.yml 中实现配置：spring.cloud.stream.rocketmq.binder 和 spring.cloud.stream.bindings
+     *  · 03).application.yml 中实现配置：spring.cloud.stream.rocketmq.binder 和 spring.cloud.stream.bindings.output
+     *      注意配置文件中的 output 是因为与 接口 Source.class 中的 @Output("output") 的值一致。
      *  · 04).编写测试实现代码：TestStreamController#testStream()
      *      source.output().send(Message<?> messag) 为发送消息的实现；
      *      在 RocketMQ 控制台上 Message 中可以查看消费发送成功。
-     * Spring Cloud Stream 编写消费者：
+     * Spring Cloud Stream 编写【消费者】：
      *  在 user-center 模块实现 ;
      *  · 01).pom.xml 中引入依赖：spring-cloud-starter-stream-rocketmq
      *  · 02).Application启动类上写注解：@EnableBinding(Sink.class)
-     *  · 03).application.yml 中实现配置：spring.cloud.stream.rocketmq.binder 和 spring.cloud.stream.bindings
+     *  · 03).application.yml 中实现配置：spring.cloud.stream.rocketmq.binder 和 spring.cloud.stream.bindings.input
+     *      ~ 特别注意：消费者的topic设定destination的值一定要与生产的topic值一致。否则无法消费。
+     *      ~ 说明：group 设置声明：如果用的是RocketMQ，一定要设置 ； 如果是其他的MQ，可以为空。
      *  · 04).编写测试实现代码：TestStreamConsumer#receive()
-     *      @StreamListener(Sink.INPUT) : 通过注解 @StreamListener 实现多监听方法调度
-     * Spring Cloud Stream 接口自定义 编写生产者：
-     *  · 01).在上面 Spring Cloud Stream 编写生产者 基础上继续进行实现
-     *  · 02).定义接口 MySource
+     *      @StreamListener(Sink.INPUT) : 通过注解 @StreamListener 实现多监听方法调度。
      *
-     * Spring Cloud Stream 接口自定义 编写消费者：
+     * 特殊说明：通过自定义学习，要理解上面的 output 和 input。
+     *
+     * Spring Cloud Stream 接口自定义 编写【生产者】：
+     *  · 01).在上面 Spring Cloud Stream 编写【生产者】 基础上继续进行实现
+     *  · 02).定义接口 MySource ：
+     *      消息发送通道定义，定义了一个 MessageChannel 类型的 output() 方法，
+     *      用 @Output 注解标示，并指定了 binding 的名称为 my-output 。
+     *  · 03).Application启动类上写注解(增加一个MySource)：@EnableBinding({Source.class, MySource.class})
+     *  · 04).application.yml 中增加配置：spring.cloud.stream.bindings.my-output
+     *      ~ 注意：配置文件中的 my-output 一定要与 接口 MySource 中注解 @Output(MY_OUTPUT) 中引用的值一致。
+     *  · 05).编写测试实现代码：TestStreamController#testStreamMySource()
+     *  · ~ 产生错误：运行调用报错：Invalid bound statement (not found): com.itmuch.contentcenter.rocketmq.MySource.output
+     *      报错是MyBatis的异常：错误原因是 @MapperScan("com.itmuch") 扫描的原因，按照 步骤 06) 进行修改即可。
+     *  · 06).修改 @MapperScan 扫描包为，缩小扫描范围：@MapperScan("com.itmuch.contentcenter.dao")
+     *      在 RocketMQ 控制台上 Message 中可以查看消费发送成功。
+     * Spring Cloud Stream 接口自定义 编写【消费者】：
+     *  在 user-center 模块实现 ;
+     *  · 01).在上面 Spring Cloud Stream 编写【消费者】 基础上继续进行实现
+     *  · 02).定义接口 MySink ：
+     *  · 03).Application启动类上写注解(增加一个MySink)：@EnableBinding({Sink.class, MySink.class})
+     *  · 04).application.yml 中增加配置：spring.cloud.stream.bindings.my-input
+     *      ~ 特别注意：消费者的topic设定destination的值一定要与生产的topic值一致。否则无法消费。
+     *      ~ 注意：配置文件中的 my-input 一定要与 接口 MySource 中注解 @Input(MY_INPUT) 中引用的值一致。
+     *      ~ 说明：group 设置声明：如果用的是RocketMQ，一定要设置 ； 如果是其他的MQ，可以为空。
+     *  · 05).编写测试实现代码：TestStreamMySourceConsumer#receive()
+     *      @StreamListener(MySink.MY_INPUT) : 通过注解 @StreamListener 实现多监听方法调度。
+     *
      * Spring Cloud Stream 本质：
-     *      当我们定义好Source/Sink接口后,在启动类使用EnableBinding指定了接口后,
-     *      就会使用IOC创建对应名字的代理类,所以配置文件中也必须同名。
+     *  · Source 接口 ：是 Spring Cloud Stream 默认提供的一个消息发送的接口。 自定义的 MySource 接口没什么区别。
+     *  · Sink 接口 ：是 Spring Cloud Stream 默认提供的一个消息接收的接口。 自定义的 MySink 接口没什么区别。
+     *  · Processor 接口 ：继承了 Source 、Sink 接口。可以使用消息发送 、接收。
+     *  · 本质：当我们定义好 Source/Sink 接口后，在启动类使用 EnableBinding 指定了接口后，
+     *          就会使用 IOC 创建对应名字的代理类，所以配置文件中也必须同名。
      */
 
 }
