@@ -45,12 +45,21 @@ spring:
       rocketmq:
         binder:
           name-server: 39.102.66.189:9876
+        bindings:
+          my-mq-output:
+            producer:
+              # 标明是事务
+              transactional: true
+              # txProducerGroup
+              group: stream-tx-add-bonus-group
       bindings:
         output:
           # 用来指定 topic
           destination: stream-test-topic
         my-output:
           destination: stream-my-test-topic
+        my-mq-output:
+          destination: new-add-bonus
 
   # 用于处理多个FeignClient存在相同调用服务名的情况
   main:
@@ -109,9 +118,9 @@ management:
       exposure:
         include: '*'
 
-# 配置rocketmq
-rocketmq:
-  name-server: 39.102.66.189:9876
-  producer:
-    # 小坑：必须指定group
-    group: test-group
+# spring 消息模型整合 rocketmq 的配置
+#rocketmq:
+#  name-server: 39.102.66.189:9876
+#  producer:
+#    # 小坑：必须指定group
+#    group: test-group

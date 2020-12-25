@@ -4,6 +4,7 @@ import com.alibaba.cloud.sentinel.annotation.SentinelRestTemplate;
 import com.itmuch.contentcenter.annotation.ScanIgnore;
 import com.itmuch.contentcenter.configuration.GlobalFeignConfiguration;
 import com.itmuch.contentcenter.configuration.MyConfig;
+import com.itmuch.contentcenter.rocketmq.MyMqSource;
 import com.itmuch.contentcenter.rocketmq.MySource;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -31,7 +32,7 @@ import tk.mybatis.spring.annotation.MapperScan;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients//(defaultConfiguration = GlobalFeignConfiguration.class)
-@EnableBinding({Source.class, MySource.class})
+@EnableBinding({Source.class, MySource.class, MyMqSource.class})
 public class ContentCenterApplication {
 
     public static void main(String[] args) {
@@ -507,13 +508,13 @@ public class ContentCenterApplication {
      *  · 01).pom.xml 中引入依赖： rocketmq-spring-boot-starter
      *  · 02).Application启动类上写注解：不需要
      *  · 03).application.yml 中实现配置：rocketmq.name-server
-     *  · 04).业务实现逻辑：shareService.auditById() -> convertAndSend("topic(主题)", "消息体")
+     *  · 04).业务实现逻辑：shareAdminService.auditById() -> convertAndSend("topic(主题)", "消息体")
      * 编写消费者：
      *  在 user-center 模块实现 ; 方法实现类：AddBonusListener
      *  · 01).pom.xml 中引入依赖： rocketmq-spring-boot-starter
      *  · 02).Application启动类上写注解：不需要
      *  · 03).application.yml 中实现配置：rocketmq.name-server
-     *  · 04).方法实现逻辑：实现 RocketMQListener 接口，泛型传入 消息体
+     *  · 04).方法实现逻辑：AddBonusListener 实现 RocketMQListener 接口，泛型传入 消息体
      *      @Service
      *      @RocketMQMessageListener(consumerGroup = "consumer-group", topic = "add-bonus")
      *      public class XXX_Listener implements RocketMQListener<?> {
@@ -536,7 +537,7 @@ public class ContentCenterApplication {
      *      ~ Rollback : 回滚事务消息，broker会删除该消息，消费者不能消费
      *      ~ UNKONWN : broker需要回查确认该消息的状态
      *  · 实现：生产者按如下修改；消费者不需要修改
-     *      shareService.auditByIdTrans() 和 AddBonusTransactionListener
+     *      shareAdminService.auditByIdTrans() 和 AddBonusTransactionListener
      *      ~ rocketMQTemplate.sendMessageInTransaction : 实现分布式事务的方法发送消息
      *      ~ XXX_TransactionListener implements RocketMQLocalTransactionListener
      *          实现 executeLocalTransaction() : 用来执行本地事务的接口
@@ -613,6 +614,56 @@ public class ContentCenterApplication {
      *  · Processor 接口 ：继承了 Source 、Sink 接口。可以使用消息发送 、接收。
      *  · 本质：当我们定义好 Source/Sink 接口后，在启动类使用 EnableBinding 指定了接口后，
      *          就会使用 IOC 创建对应名字的代理类，所以配置文件中也必须同名。
+     *
+     * ---
+     *
+     * Spring Cloud Stream 消息过滤：
+     * · 手记：https://www.imooc.com/article/290424
+     *
+     *  Spring Cloud Stream 监控：
+     *
+     * Spring Cloud Stream 异常处理：
+     * · 手记：https://www.imooc.com/article/290435
+     *
+     * ---
+     *
+     * Spring Cloud Stream + RocketMQ 实现分布式事务
+     * · Stream 没有提供分布式事务的能力，分布式事务是 RocketMQ 提供的能力。
+     * · content-center 和 user-center ：application.yml 中 spring 消息模型整合 rocketmq 的配置 可以不需要了。暂时注释掉。
+     * · 使用本身提供的 Source 即可以实现，但是为了保留测试代码，新建一个自定义的 Source : MyMqSource -> topic 为 new-add-bonus
+     * · 使用本身提供的 Sink 即可以实现，但是为了保留测试代码，新建一个自定义的 Source : MyMqSink -> topic 为 new-add-bonus
+     * · content-center 和 user-center ：中的 destination 保持一致
+     *
+     * 【重构】消息生产者
+     * · 01).实际就是使用 Stream 替换 rocketMQTemplate.sendMessageInTransaction 逻辑即可
+     *      shareAdminService#auditByIdStreamMqTrans() :
+     *          myMqSource.output().send(Message<?> message) 无法参入 arg 值，将值放在 header 中处理
+     * · 02).application.yml 中配置
+     *      ~ spring.cloud.stream.bindings.my-mq-output.destination=new-add-bonus
+     *      ~ spring.cloud.stream.rocketmq.bindings.my-mq-output.producer
+     *          使用 transcational: true 实现事务 ；group 标明组，与txProducerGroup值保持一致。
+     * · 03).新编写 NewAddBonusTransactionListener 实现类：
+     *      使用注解 @RocketMQTransactionListener : txProducerGroup 一定要与 spring.cloud.stream.rocketmq.bindings.my-mq-output.producer.group 配置的值保持一致
+     * · 【特别注意】：需要注释掉 rocketmq.name-server 和 rocketmq.producer ； 同时在 ShareAdminService 中暂时注释掉 RocketMQTemplate
+     *      否则会报错：client.exception.MQClientException: The producer group has been created before, specify another name please.
+     *
+     * 【重构】消息消费者
+     * 在 user-center 模块实现 ;
+     * · 01).application.yml 中配置
+     *      ~ spring.cloud.stream.bindings.my-mq-input.destination=new-add-bonus
+     * · 02).新编写 NewAddBonusListener 实现类：
+     *      ~ @StreamListener(MyMqSink.MY_MQ_INPUT)
+     *        public void receive(UserAddBonusMsgDTO message) {
+     *          // 重构本地事务逻辑
+     *        }
+     *
+     * ---
+     *
+     * Spring Cloud Stream 知识盘点：
+     * · 手记：https://www.imooc.com/article/290489
+     *
+     *
+     *
      */
 
 }
