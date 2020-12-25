@@ -6,6 +6,7 @@ import com.itmuch.contentcenter.configuration.GlobalFeignConfiguration;
 import com.itmuch.contentcenter.configuration.MyConfig;
 import com.itmuch.contentcenter.rocketmq.MyMqSource;
 import com.itmuch.contentcenter.rocketmq.MySource;
+import com.itmuch.contentcenter.rocketmq.MyTagsSource;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -32,7 +33,7 @@ import tk.mybatis.spring.annotation.MapperScan;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients//(defaultConfiguration = GlobalFeignConfiguration.class)
-@EnableBinding({Source.class, MySource.class, MyMqSource.class})
+@EnableBinding({Source.class, MySource.class, MyMqSource.class, MyTagsSource.class})
 public class ContentCenterApplication {
 
     public static void main(String[] args) {
@@ -618,9 +619,28 @@ public class ContentCenterApplication {
      * ---
      *
      * Spring Cloud Stream 消息过滤：
-     * · 手记：https://www.imooc.com/article/290424
+     * - 手记：https://www.imooc.com/article/290424
+     *   实现消息消费的过滤例子：实现消息的分流处理：生产者生产的消息，虽然消息体可能一样，但是header不一样。
+     *   可编写两个或者更多的消费者，对不同header的消息做针对性的处理！
+     *   生产者：content-center ; 消费者：user-center
+     * · 方式(1)：condition 方式：都使用 Sink 进行测试：
+     *  ~ 生产者：设置一下header，比如my-header，值根据你的需要填写：my-condition-header
+     *  ~ 消费者：@StreamListener(value = Sink.INPUT, condition = "headers['my-header']=='my-condition-header'")
+     * 	        使用 StreamListener 注解的 condition 属性。当 headers['my-header']=='my-condition-header' 条件满足，才会进入到方法体。
+     * · 方式(2)：Tags 方式: 该方式只支持RoketMQ，不支持Kafka/RabbitMQ
+     *  ~ 生产者：设置一下header : setHeader(RocketMQHeaders.TAGS, "tag1") : 需要注意：只能设置1个tag
+     *          防止代码混乱，新创建一个接口：MyTagsSource
+     *  ~ 消费者：
+     *      ~ 01).创建自定义消息消费接口：MyTagsSink : 设定两个 Input
+     *      ~ 02).application.yml 中增加配置：
+     *          spring.cloud.stream.rocketmq.bindings.my_tags_input1 和 my_tags_input2
+     *          spring.cloud.stream.bindings.my_tags_input1 和 my_tags_input2
+     *      ~ 03).创建实现类：TestStreamTagsConsumer
+     * · 方式(3)：Sql 92 : 该方式只支持RoketMQ，不支持Kafka/RabbitMQ。注意用了sql，就不要用Tag。
+     *      官方文档：http://rocketmq.apache.org/rocketmq/filter-messages-by-sql92-in-rocketmq/
+     *      具体请查看手记及官方文档学习使用。
      *
-     *  Spring Cloud Stream 监控：
+     * Spring Cloud Stream 监控：
      *
      * Spring Cloud Stream 异常处理：
      * · 手记：https://www.imooc.com/article/290435

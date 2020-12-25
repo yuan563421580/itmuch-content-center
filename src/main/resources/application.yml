@@ -60,6 +60,8 @@ spring:
           destination: stream-my-test-topic
         my-mq-output:
           destination: new-add-bonus
+        my-tags-output:
+          destination: stream-tags-test-topic
 
   # 用于处理多个FeignClient存在相同调用服务名的情况
   main:
@@ -119,6 +121,7 @@ management:
         include: '*'
 
 # spring 消息模型整合 rocketmq 的配置
+# 因为使用 Spring Cloud Stream 方式进行学习测试，需要先注释掉，否则可能会报错
 #rocketmq:
 #  name-server: 39.102.66.189:9876
 #  producer:
