@@ -119,6 +119,9 @@ management:
     web:
       exposure:
         include: '*'
+  endpoint:
+    health:
+      show-details: always
 
 # spring 消息模型整合 rocketmq 的配置
 # 因为使用 Spring Cloud Stream 方式进行学习测试，需要先注释掉，否则可能会报错
