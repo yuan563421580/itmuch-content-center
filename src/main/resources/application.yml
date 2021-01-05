@@ -2,8 +2,9 @@ server:
   port: 8010
 
 spring:
-  application:
-    name: content-center
+  # 服务名称 -> Nacos 管理配置时注释掉，在bootstrap.yml中写入
+#  application:
+#    name: content-center
 
   datasource:
     url: jdbc:mysql://127.0.0.1:3306/content_center?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai

@@ -1,0 +1,10 @@
+spring:
+  cloud:
+    nacos:
+      config:
+        server-addr: 39.102.66.189:8848
+        file-extension: yaml
+  application:
+    name: content-center
+  profiles:
+    active: dev

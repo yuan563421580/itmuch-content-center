@@ -7,8 +7,10 @@ import com.itmuch.contentcenter.feignclient.TestBaiduFeignClient;
 import com.itmuch.contentcenter.feignclient.TestUserCenterFeignClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,6 +21,7 @@ import java.util.List;
 // @RequiredArgsConstructor(onConstructor = @__(@Autowired)) 相当于 @Autowired(requird=false)
 @RestController
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RefreshScope
 public class TestController {
 
     //@Autowired(required = false)
@@ -93,6 +96,14 @@ public class TestController {
     @GetMapping("/baiduIndex")
     public String baiduIndex() {
         return testBaiduFeignClient.index();
+    }
+
+    @Value("${your.configuration}")
+    private String yourConfiguration;
+
+    @GetMapping("/test-config")
+    public String testConfiguration() {
+        return this.yourConfiguration;
     }
 
 }

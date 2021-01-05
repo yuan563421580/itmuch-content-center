@@ -769,4 +769,32 @@ public class ContentCenterApplication {
      *
      */
 
+    /**
+     * 使用 Nacos 管理配置 ：实现配置
+     *  · 01).引入依赖：spring-cloud-starter-alibaba-nacos-config
+     *  · 02).写配置：spring cloud alibaba 采用约定大于配置的方式管理配置
+     *        ~ 创建：bootstrap.yml ，实现相关配置，注意这里面是 config
+     *        - 说明：bootstrap.yml 中的 server-addr 是用作于【配置管理】的：spring.cloud.nacos.config
+     *               application.yml 中的 server-addr 是用作于【服务注册】的：spring.cloud.nacos.discovery
+     *  · 03).注释掉 application.yml 中的 spring.application.name
+     *  · 04).编写测试类：TestController#testConfiguration()
+     *  · 05).如果报错：o.s.c.a.n.c.NacosPropertySourceBuilder : get data from Nacos error,dataId:content-center-dev.yaml
+     *      参考解决：查看Linux对应的全局字符文件(vim /etc/locale.conf): 修改成：LANG=zh_CN.UTF-8 （已经修改）
+     *              启动时候：java -Dfile.encoding=utf-8 -jar test.jar （未进行修改）
+     * 使用 Nacos 管理配置 ：配置属性动态刷新
+     *  · 01).通过注解 @RefreshScope 实现：在需要修改的属性的类上增加 @RefreshScope 注解。
+     * 使用 Nacos 管理配置 ：配置共享 ：相同应用不同环境的共享
+     *  · 启动日志:Located property source: [BootstrapPropertySource {name='bootstrapProperties-content-center-dev.yaml,DEFAULT_GROUP'},
+     *                                      BootstrapPropertySource {name='bootstrapProperties-content-center.yaml,DEFAULT_GROUP'}]
+     *  · 分析启动日志：content-center-dev.yaml 是 dev 环境下的指定配置 ； content-center.yaml 是通用配置。
+     *  · 优先级：指定配置的优先级 > 通用配置的优先级
+     * 使用 Nacos 管理配置 ：配置共享 ：应用间的共享
+     *  · 方式1. shared-dataids : resources/config-share/bootstrap-shared-dataids.yml
+     *  · 方式2. ext-config : resources/config-share/bootstrap-ext-config.yml
+     *  · 选择一个实现方式，将内容复制粘贴到 bootstrap.yml 中。
+     *  · 优先级：shared-dataids < ext-config < 自动
+     *
+     * · 手记：https://www.imooc.com/article/288153
+     */
+
 }
