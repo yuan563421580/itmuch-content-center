@@ -741,7 +741,7 @@ public class ContentCenterApplication {
      * AOP实现登录检查
      *  · 01).引入依赖：spring-boot-starter-aop
      *  · 02).创建注解：CheckLogin
-     *  · 03).创建切面：CheckLoginAspect
+     *  · 03).创建切面：CheckLoginAspect (后续会修改成AuthAspect)
      * 统一管理异常：
      *  · 01).GlobalExceptionErrorHandler
      *
@@ -761,6 +761,11 @@ public class ContentCenterApplication {
      *  · 方式2. 实现接口： ClientHttpRequestInterceptor
      *      实现：创建拦截器 RestTemplateTokenRelayInterceptor ，
      *           在启动类创建RestTemplate时候设置interceptor ： restTemplate.setInterceptors()
+     *
+     * AOP实现用户权限验证 (在AOP实现登录检查基础上修改)
+     *  · 01).创建注解：CheckAuthorization
+     *  · 02).修改切面：CheckLoginAspect 修改成AuthAspect ，修改现有方法进行封装，增加权限验证逻辑
+     *  · 03).方法中增加注解：ShareAdminController#auditById() -加注解-> @CheckAuthorization("admin")
      *
      */
 
