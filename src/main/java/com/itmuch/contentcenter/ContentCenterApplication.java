@@ -778,11 +778,14 @@ public class ContentCenterApplication {
      *               application.yml 中的 server-addr 是用作于【服务注册】的：spring.cloud.nacos.discovery
      *  · 03).注释掉 application.yml 中的 spring.application.name
      *  · 04).编写测试类：TestController#testConfiguration()
-     *  · 05).如果报错：o.s.c.a.n.c.NacosPropertySourceBuilder : get data from Nacos error,dataId:content-center-dev.yaml
+     *  · 05).查看 nacos-bootstrap-config-standard.jpg 进行配置
+     *  · 06).如果报错：o.s.c.a.n.c.NacosPropertySourceBuilder : get data from Nacos error,dataId:content-center-dev.yaml
      *      参考解决：查看Linux对应的全局字符文件(vim /etc/locale.conf): 修改成：LANG=zh_CN.UTF-8 （已经修改）
      *              启动时候：java -Dfile.encoding=utf-8 -jar test.jar （未进行修改）
+     *
      * 使用 Nacos 管理配置 ：配置属性动态刷新
      *  · 01).通过注解 @RefreshScope 实现：在需要修改的属性的类上增加 @RefreshScope 注解。
+     *
      * 使用 Nacos 管理配置 ：配置共享 ：相同应用不同环境的共享
      *  · 启动日志:Located property source: [BootstrapPropertySource {name='bootstrapProperties-content-center-dev.yaml,DEFAULT_GROUP'},
      *                                      BootstrapPropertySource {name='bootstrapProperties-content-center.yaml,DEFAULT_GROUP'}]
@@ -794,7 +797,29 @@ public class ContentCenterApplication {
      *  · 选择一个实现方式，将内容复制粘贴到 bootstrap.yml 中。
      *  · 优先级：shared-dataids < ext-config < 自动
      *
-     * · 手记：https://www.imooc.com/article/288153
+     * 引导上下文：
+     *  · 连接配置服务器，读取外部配置
+     *  · Application Context 的父上下文
+     *  · 远程配置 & 本地配置优先级
+     *      - 查看 nacos-bootstrap-config-yml.jpg ，
+     *      - 特殊注意：一定要放在远程配置（nacos的配置文件）中才会生效。
+     *
+     * Nacos数据持久化：
+     *  · 服务发现组件 ：~/nacos/naming
+     *  · 配置服务器 ：
+     *      - 配置数据 ：$NACOS_HOME/data/derby-data
+     *      - 快照等 ：~/nacos/config
+     *      存储在derby的数据不能用于生产环境：derby是内嵌式数据库，不能高可用
+     *
+     * 搭建生产可用的Nacos集群
+     *  · 手记：https://www.imooc.com/article/288153
+     *
+     * 最佳实践总结
+     *  · 能放本地，不放远程
+     *  · 尽量规避优先级
+     *  · 定规范，例如所有的配置属性都要加上注释
+     *  · 配置管理人员尽量少
+     *
      */
 
 }
