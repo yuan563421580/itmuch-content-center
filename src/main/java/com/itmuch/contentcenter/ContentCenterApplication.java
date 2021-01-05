@@ -4,6 +4,7 @@ import com.alibaba.cloud.sentinel.annotation.SentinelRestTemplate;
 import com.itmuch.contentcenter.annotation.ScanIgnore;
 import com.itmuch.contentcenter.configuration.GlobalFeignConfiguration;
 import com.itmuch.contentcenter.configuration.MyConfig;
+import com.itmuch.contentcenter.interceptor.RestTemplateTokenRelayInterceptor;
 import com.itmuch.contentcenter.rocketmq.MyMqSource;
 import com.itmuch.contentcenter.rocketmq.MySource;
 import com.itmuch.contentcenter.rocketmq.MyTagsSource;
@@ -19,6 +20,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.web.client.RestTemplate;
 import tk.mybatis.spring.annotation.MapperScan;
+
+import java.util.Collections;
 
 /**
  * @MapperScan("com.itmuch") 扫描 mybatis 里面的包的接口
@@ -49,7 +52,17 @@ public class ContentCenterApplication {
     @LoadBalanced
     @SentinelRestTemplate
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        //return new RestTemplate();
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        // 实现拦截器配置
+        restTemplate.setInterceptors(
+                Collections.singletonList(
+                        new RestTemplateTokenRelayInterceptor()
+                )
+        );
+        return restTemplate;
     }
 
     /**
@@ -735,14 +748,20 @@ public class ContentCenterApplication {
      * Feign 传递 Token
      *  · 方式1. @RequestHeader
      *      优点：修改简单。缺点：需要修改feign的定义，多个api的时候修改工作量大。
-     *  · 方式2. RequestInterceptor
+     *  · 方式2. 实现接口： RequestInterceptor
+     *      优点：实现全局用意配置处理，不需要修改具体的业务代码。
      *      实现类：TokenRelayRequestInterceptor 实现传递 token
      *             配置Feign , 可以通过 @FeignClient(configuration = XXX.class) 或者在 application.xml 中实现配置
      *             本次选择在配置文件 application.xml 进行全局配置。
      *
      * RestTemplate 传递 Token
      *  · 方式1. exchange()
-     *  · 方式2. ClientHttpRequestInterceptor
+     *      优点：修改简单。缺点：多个api的时候修改工作量大。
+     *      实现：TestSentinelController 中 tokenRelay()
+     *  · 方式2. 实现接口： ClientHttpRequestInterceptor
+     *      实现：创建拦截器 RestTemplateTokenRelayInterceptor ，
+     *           在启动类创建RestTemplate时候设置interceptor ： restTemplate.setInterceptors()
+     *
      */
 
 }

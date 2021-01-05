@@ -16,12 +16,20 @@ import com.itmuch.contentcenter.service.test.TestSentinelService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -231,5 +239,28 @@ public class TestSentinelController {
         return userDTO;
     }
 
+    @GetMapping("/tokenRelay/{userId}")
+    public ResponseEntity<UserDTO> tokenRelay(@PathVariable Integer userId,
+                                              HttpServletRequest request) {
+
+        /*RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        ServletRequestAttributes attributes = (ServletRequestAttributes) requestAttributes;
+        HttpServletRequest request = attributes.getRequest();*/
+
+        // 获取token
+        String token = request.getHeader("X-Token");
+
+        // 创建header
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-Token", token);
+
+        return restTemplate.exchange(
+                "http://user-center/users/{userId}",
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                UserDTO.class,
+                userId
+        );
+    }
 
 }
