@@ -55,6 +55,7 @@ public class ContentCenterApplication {
     /**
      * Nacos 控制台访问地址：http://39.102.66.189:8848/nacos
      * Sentinel 控制台访问地址：http://39.102.66.189:8849/#/login
+     *                       http://localhost:8849/#/login
      * RocketMQ 控制台访问地址：http://39.102.66.189:17890/
      */
 
@@ -710,6 +711,38 @@ public class ContentCenterApplication {
      *
      * 创建网关 gateway 工程。
      *      后续 Spring Cloud Gateway 相关知识点请在 gateway 工程查看。
+     */
+
+    /**
+     * 微服务的用户认证与授权
+     * 主要实现在 user-center 模块，可以进行查阅
+     *
+     * JWT操作工具类：
+     *  ~ 手记：https://www.imooc.com/article/290892
+     * 用户中心引入JWT实现逻辑
+     *  · 01).pom.xml 中引入依赖：jjwt-api 、 jjwt-impl 、 jjwt-jackson
+     *  · 02).创建工具包：JwtOperator
+     *  · 03).application.yml中配置jwt：jwt.secret:秘钥 和 jwt.expire-time-in-second:有效期
+     * 用户中心按照上述整合jwt , 注意秘钥[jwt.secret:秘钥]需要保持一致
+     *
+     * AOP实现登录检查
+     *  · 01).引入依赖：spring-boot-starter-aop
+     *  · 02).创建注解：CheckLogin
+     *  · 03).创建切面：CheckLoginAspect
+     * 统一管理异常：
+     *  · 01).GlobalExceptionErrorHandler
+     *
+     * Feign 传递 Token
+     *  · 方式1. @RequestHeader
+     *      优点：修改简单。缺点：需要修改feign的定义，多个api的时候修改工作量大。
+     *  · 方式2. RequestInterceptor
+     *      实现类：TokenRelayRequestInterceptor 实现传递 token
+     *             配置Feign , 可以通过 @FeignClient(configuration = XXX.class) 或者在 application.xml 中实现配置
+     *             本次选择在配置文件 application.xml 进行全局配置。
+     *
+     * RestTemplate 传递 Token
+     *  · 方式1. exchange()
+     *  · 方式2. ClientHttpRequestInterceptor
      */
 
 }

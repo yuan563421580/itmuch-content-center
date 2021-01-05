@@ -36,7 +36,10 @@ https://github.com/alibaba/nacos/releases
 https://nacos.io/zh-cn/docs/quick-start.html
 
 Sentinel是什么
-启动命令：java -Dserver.port=8849 -Dcsp.sentinel.dashboard.server=localhost:8849 -Dproject.name=sentinel-dashboard -jar sentinel-dashboard-1.7.1.jar
+启动命令：
+java -Dserver.port=8849 -Dcsp.sentinel.dashboard.server=localhost:8849 -Dproject.name=sentinel-dashboard -jar sentinel-dashboard-1.7.1.jar
+nohup java -jar sentinel-dashboard.jar --server.port=8849 &
+
 https://github.com/alibaba/Sentinel
 Sentinel下载界面（根据本用例的sentinel-core下载相同版本1.7.1 ，下载jar）
 https://github.com/alibaba/Sentinel/releases
@@ -51,4 +54,3 @@ https://www.bookstack.cn/read/sentinel-v1.7/20050d85bb9d7a61.md
 此项目基于sentinel-dashboard 1.7.1版本，增加控制台规则持久化到redis
 https://gitee.com/lvlaotou/sentinel-dashboard-redis
 
-nohup java -jar sentinel-dashboard.jar --server.port=8849 &

@@ -96,6 +96,8 @@ feign:
       # 全局配置
       default:
         loggerLevel: full
+        requestInterceptors:
+          - com.itmuch.contentcenter.feignclient.interceptor.TokenRelayRequestInterceptor
 
   httpclient:
     # 让 feign 使用 apache httpclient 作请求
@@ -130,3 +132,9 @@ management:
 #  producer:
 #    # 小坑：必须指定group
 #    group: test-group
+
+# 配置jwt
+jwt:
+  secret: aaaaabbbbbbccccccddddeeeeffffgggghhhh
+  # 有效期，单位秒，默认2周
+  expire-time-in-second: 1209600

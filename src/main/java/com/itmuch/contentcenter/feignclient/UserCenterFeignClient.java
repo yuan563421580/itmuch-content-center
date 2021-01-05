@@ -4,6 +4,7 @@ import com.itmuch.contentcenter.configuration.UserCenterFeignClientConfiguration
 import com.itmuch.contentcenter.domain.dto.user.UserDTO;
 import com.itmuch.contentcenter.feignclient.fallback.UserCenterFeignClientFallback;
 import com.itmuch.contentcenter.feignclient.fallbackfactory.UserCenterFeignClientFallbackFactory;
+import com.itmuch.contentcenter.feignclient.interceptor.TokenRelayRequestInterceptor;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,7 +22,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 //@FeignClient(name = "user-center", configuration = UserCenterFeignClientConfiguration.class)
 @FeignClient(name = "user-center",
         //fallback = UserCenterFeignClientFallback.class,
-        fallbackFactory = UserCenterFeignClientFallbackFactory.class
+        fallbackFactory = UserCenterFeignClientFallbackFactory.class/*,
+        configuration = TokenRelayRequestInterceptor.class*/
 )
 public interface UserCenterFeignClient {
 
