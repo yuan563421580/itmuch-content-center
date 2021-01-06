@@ -68,6 +68,16 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
+  # 配置 zipkin
+  zipkin:
+    base-url: http://39.102.66.189:9411/
+    discovery-client-enabled: false
+  # 配置 sleuth
+  sleuth:
+    sampler:
+      # 抽样率，默认是0.1（10%），测试为了查看数据方便所以设置成1.0
+      probability: 1.0
+
 # 配置通过ribbon调用user-center服务的细粒度
 #user-center:
 #  ribbon:

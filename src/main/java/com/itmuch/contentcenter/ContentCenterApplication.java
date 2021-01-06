@@ -819,6 +819,58 @@ public class ContentCenterApplication {
      *  · 尽量规避优先级
      *  · 定规范，例如所有的配置属性都要加上注释
      *  · 配置管理人员尽量少
+     */
+
+    /**
+     * 业界流行的调用链监控工具
+     *  · Spring Cloud Sleuth + Zipkin
+     *  · Skywalking 、Pinpoint
+     *
+     * ---
+     *
+     * Sleuth
+     *  · 什么是 Sleuth ：Sleuth 是一个 Spring Cloud 的分布式跟踪解决方案。
+     *  · Sleuth 术语 ：
+     *      ~ Span(跨度): Sleuth的基本工作单元，它用一个64位的id唯一标识。
+     *                  除id外，Span还包含其他数据，例如描述、时间戳事件、键值对的注解（标签）、spanId、span父ID等。
+     *      ~ trace(跟踪): 一组span组成的树状结构称为 trace。
+     *      ~ Annotation(标注):
+     *          - CS(Client Sent客户端发送)：客户端发起一个请求，该annotation描述了span的开始。
+     *          - SR(Server Received服务器端接收)：服务器端获得请求并准备处理它。
+     *          - SS(Server Sent服务器端发送)：该annotation表明完成请求处理（当响应发回客户端时）。
+     *          - CR(Client Received客户端接收)：span结束的标识。客户端成功接收到服务器端的响应。
+     *
+     * 整合Sleuth
+     *  · 01).引入依赖：spring-cloud-starter-sleuth
+     *        不需要注解和配置。
+     *  · 02).启动进行测试：观察控制台日志：[user-center,,,]
+     *
+     * ---
+     *
+     * Zipkin
+     *  · Zipkin是什么：Zipkin是Twitter开源的分布式跟踪系统，主要用来收集系统的时序数据，从而追踪系统的调用问题。
+     *          通俗的讲Zipkin是前面分析的数据库和界面。
+     *  · 搭建 Zipkin Server
+     *      ~ 手记：https://www.imooc.com/article/291572
+     *      ~ 访问地址：http://39.102.66.189:9411/
+     * 整合Sleuth
+     *  · 01).引入依赖：spring-cloud-starter-zipkin
+     *      注意：当整合zipkin后就不需要sleuth，原因是zipkin依赖包含sleuth
+     *  · 02).application.yml中配置：spring.zipkin.base-url
+     *                             spring.sleuth.sampler.probability
+     *
+     * 解决Spring Cloud Alibaba/Spring Cloud整合Zipkin之后的报错问题（本工程版本没有此问题）
+     *  错误信息：ERROR [user-center,,,] 48628 --- [.naming.updater] com.alibaba.nacos.client.naming          :
+     *              [NA] failed to update serviceName: DEFAULT_GROUP@@localhost
+     *  ~ 手记：https://www.imooc.com/article/291578
+     *  · 原因：Spring Cloud把 http://localhost:9411/ 当作了服务发现组件里面的服务名称；
+     *          于是，Nacos Client尝试从Nacos Server寻找一个名为 localhost:9411 的服务…这个服务根本不存在啊，
+     *          于是就疯狂报异常（因为Nacos Client本地定时任务，刷新本地服务发现缓存）
+     *  · 解决方案：方案1.让Spring Cloud 正确识别 http://localhost:9411/ ，当成一个URL，而不要当做服务名。
+     *            方案2.把Zipkin Server注册到Nacos
+     *  · 谈谈Zipkin Server注册到服务发现组件：Zipkin Server 官方并不支持注册到服务发现组件！！！！
+     *              在 https://github.com/openzipkin/zipkin/issues/2540 里面。
+     *  · 配置实现：spring.zipkin.discovery-client-enabled: false
      *
      */
 
