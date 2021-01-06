@@ -149,3 +149,9 @@ jwt:
   secret: aaaaabbbbbbccccccddddeeeeffffgggghhhh
   # 有效期，单位秒，默认2周
   expire-time-in-second: 1209600
+
+# 配置 mybatis
+mybatis:
+  configuration:
+    # 表字段下划线命名映射到类中驼峰命名配置
+    map-underscore-to-camel-case: true

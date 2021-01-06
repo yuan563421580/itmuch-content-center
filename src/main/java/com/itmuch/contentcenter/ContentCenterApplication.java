@@ -872,6 +872,20 @@ public class ContentCenterApplication {
      *              在 https://github.com/openzipkin/zipkin/issues/2540 里面。
      *  · 配置实现：spring.zipkin.discovery-client-enabled: false
      *
+     * Zipkin持久化
+     *  · TODO 后续记录日记补充
+     *
+     */
+
+    /**
+     * Mybatis分页插件：Mybatis-PageHelper
+     * 地址：https://github.com/pagehelper/Mybatis-PageHelper
+     * 整合PageHelper步骤：
+     *  · 01).引入依赖：pagehelper-spring-boot-starter
+     *  · 02).编写测试类：ShareService#q()
+     *  · 03).测试遇到问题: 很多字段类似 userId 这种值是 null
+     *      解决方案1. Mapper.xml 中 selectByParam 的 resultType 修改成 resultType=“BaseResultMap”
+     *      解决方案2. application.yml中配置：mybatis.configuration.map-underscore-to-camel-case: true  ---表字段下划线命名映射到类中驼峰命名配置
      */
 
 }

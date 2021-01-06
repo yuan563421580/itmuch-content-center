@@ -1,5 +1,6 @@
 package com.itmuch.contentcenter.feignclient.fallback;
 
+import com.itmuch.contentcenter.domain.dto.user.UserAddBonseDTO;
 import com.itmuch.contentcenter.domain.dto.user.UserDTO;
 import com.itmuch.contentcenter.feignclient.UserCenterFeignClient;
 import org.springframework.stereotype.Component;
@@ -11,5 +12,10 @@ public class UserCenterFeignClientFallback implements UserCenterFeignClient {
         UserDTO userDTO = new UserDTO();
         userDTO.setWxNickname("Fallback一个默认用户");
         return userDTO;
+    }
+
+    @Override
+    public UserDTO addBonus(UserAddBonseDTO userAddBonseDTO) {
+        return null;
     }
 }

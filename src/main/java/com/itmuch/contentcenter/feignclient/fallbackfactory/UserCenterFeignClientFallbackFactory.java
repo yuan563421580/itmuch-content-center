@@ -1,5 +1,6 @@
 package com.itmuch.contentcenter.feignclient.fallbackfactory;
 
+import com.itmuch.contentcenter.domain.dto.user.UserAddBonseDTO;
 import com.itmuch.contentcenter.domain.dto.user.UserDTO;
 import com.itmuch.contentcenter.feignclient.UserCenterFeignClient;
 import feign.hystrix.FallbackFactory;
@@ -26,6 +27,11 @@ public class UserCenterFeignClientFallbackFactory
                 UserDTO userDTO = new UserDTO();
                 userDTO.setWxNickname("FallbackFactory一个默认用户");
                 return userDTO;
+            }
+
+            @Override
+            public UserDTO addBonus(UserAddBonseDTO userAddBonseDTO) {
+                return null;
             }
         };
     }

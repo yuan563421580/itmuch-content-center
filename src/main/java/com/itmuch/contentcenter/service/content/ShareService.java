@@ -1,8 +1,13 @@
 package com.itmuch.contentcenter.service.content;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.itmuch.contentcenter.dao.content.MidUserShareMapper;
 import com.itmuch.contentcenter.dao.content.ShareMapper;
 import com.itmuch.contentcenter.domain.dto.content.ShareDTO;
+import com.itmuch.contentcenter.domain.dto.user.UserAddBonseDTO;
 import com.itmuch.contentcenter.domain.dto.user.UserDTO;
+import com.itmuch.contentcenter.domain.entity.content.MidUserShare;
 import com.itmuch.contentcenter.domain.entity.content.Share;
 import com.itmuch.contentcenter.feignclient.UserCenterFeignClient;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +20,7 @@ import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -33,6 +39,9 @@ public class ShareService {
     private final UserCenterFeignClient userCenterFeignClient;
 
     private final RocketMQTemplate rocketMQTemplate;
+
+    private final MidUserShareMapper midUserShareMapper;
+
 
     public ShareDTO findById(Integer id) {
         //return findByIdUrl(id);
@@ -153,6 +162,105 @@ public class ShareService {
         shareDTO.setWxNickname(userDTO.getWxNickname());
 
         return shareDTO;
+    }
+
+    /**
+     * 分页查询
+     * @param title
+     * @param pageNo
+     * @param pageSize
+     * @return
+     */
+    public PageInfo<Share> q(String title, Integer pageNo, Integer pageSize, Integer userId) {
+
+        // 要开始分页了...
+        // 它会切入下面这条不分页的SQL，自动拼接分页的SQL
+        // 本质是Mybatis的拦截器，自动加上了limit
+        PageHelper.startPage(pageNo, pageSize);
+
+        // 不分页的SQL
+        List<Share> shares = this.shareMapper.selectByParam(title);
+
+
+        List<Share> sharesDeal;
+        // 1. 如果用户未登录，那么downloadUrl全部设为null
+        if (userId == null) {
+            sharesDeal = shares.stream()
+                    .peek(share -> {
+                        share.setDownloadUrl(null);
+                    })
+                    .collect(Collectors.toList());
+        }
+        // 2. 如果用户登录了，那么查询一下mid_user_share，如果没有数据，那么这条share的downloadUrl也设为null
+        else {
+            sharesDeal = shares.stream()
+                    .peek(share -> {
+                        MidUserShare midUserShare = this.midUserShareMapper.selectOne(
+                                MidUserShare.builder()
+                                        .userId(userId)
+                                        .shareId(share.getId())
+                                        .build()
+                        );
+                        if (midUserShare == null) {
+                            share.setDownloadUrl(null);
+                        }
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        // PageInfo 是一个工具类
+        PageInfo<Share> sharePageInfo = new PageInfo<>(sharesDeal);
+        return sharePageInfo;
+    }
+
+    /**
+     * 积分兑换指定ID
+     * @param id
+     * @param request
+     * @return
+     */
+    public Share exchangeById(Integer id, HttpServletRequest request) {
+        Object userId = request.getAttribute("id");
+        Integer integerUserId = (Integer) userId;
+
+        // 1. 根据id查询share，校验是否存在
+        Share share = this.shareMapper.selectByPrimaryKey(id);
+        if (share == null) {
+            throw new IllegalArgumentException("该分享不存在！");
+        }
+        Integer price = share.getPrice();
+
+        // 2. 如果当前用户已经兑换过该分享，则直接返回
+        MidUserShare midUserShare = this.midUserShareMapper.selectOne(
+                MidUserShare.builder()
+                        .shareId(id)
+                        .userId(integerUserId)
+                        .build()
+        );
+        if (midUserShare != null) {
+            return share;
+        }
+
+        // 3. 根据当前登录的用户id，查询积分是否够
+        UserDTO userDTO = this.userCenterFeignClient.findById(integerUserId);
+        if (price > userDTO.getBonus()) {
+            throw new IllegalArgumentException("用户积分不够用！");
+        }
+
+        // 4. 扣减积分 & 往mid_user_share里插入一条数据
+        this.userCenterFeignClient.addBonus(
+                UserAddBonseDTO.builder()
+                        .userId(integerUserId)
+                        .bonus(0 - price)
+                        .build()
+        );
+        this.midUserShareMapper.insert(
+                MidUserShare.builder()
+                        .userId(integerUserId)
+                        .shareId(id)
+                        .build()
+        );
+        return share;
     }
 
     public static void main(String[] args) {
